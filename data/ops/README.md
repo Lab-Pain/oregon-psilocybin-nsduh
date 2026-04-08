@@ -1,7 +1,7 @@
 # OPS Data
 
 Download quarterly CSV files from the Oregon Psilocybin Services Data Dashboard:
-https://www.oregon.gov/oha/PH/PREVENTIONWELLNESS/Pages/Oregon-Psilocybin-Services-Data-Dashboard.aspx
+https://www.oregon.gov/oha/ph/preventionwellness/pages/psilocybin-data-dashboard.aspx
 
 Files needed (place in project root, NOT in this directory):
 - OPS-Data-File-2025-Q1.csv
