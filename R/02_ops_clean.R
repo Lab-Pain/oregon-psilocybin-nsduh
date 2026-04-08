@@ -161,9 +161,67 @@ print(ops_income)
 cat("\n--- OPS Visit Reasons (top 15) ---\n")
 print(ops_visit %>% filter(!is.na(pct)) %>% arrange(desc(pct)) %>% head(15))
 
+# ===========================================================
+# Service denials by reason
+# ===========================================================
+denial_cols <- c(
+  "DeniedDueToClientRequestedInconsistentBusinessModel",
+  "DeniedDueToClientIsIneligible",
+  "DeniedDueToClientIsIntoxicated",
+  "DeniedDueToClientExhibitedConcerningBehaviors",
+  "DeniedDueToOtherReasons"
+)
+denial_summary <- ops_all %>%
+  summarise(across(all_of(denial_cols), ~sum(., na.rm = TRUE))) %>%
+  pivot_longer(everything(), names_to = "reason", values_to = "n") %>%
+  mutate(
+    label = case_when(
+      grepl("Inconsistent", reason)  ~ "Inconsistent with business model",
+      grepl("Ineligible", reason)    ~ "Client ineligible",
+      grepl("Intoxicated", reason)   ~ "Client intoxicated",
+      grepl("Concerning", reason)    ~ "Concerning behaviors",
+      grepl("Other", reason)         ~ "Other reasons"
+    ),
+    pct_of_denials = n / sum(n) * 100
+  )
+
+# ===========================================================
+# Table 2: Service and safety summary (CSV export)
+# ===========================================================
+total_encounters <- service_summary$total_clients
+total_sessions   <- service_summary$total_sessions
+total_denials    <- service_summary$total_denials
+
+table2 <- tribble(
+  ~category,        ~characteristic,                        ~n,      ~denominator,  ~pct,
+  "Service volume", "Client-quarter encounters",            total_encounters, NA,    NA,
+  "Service volume", "Individual administration sessions",   service_summary$total_individual, total_sessions, service_summary$total_individual / total_sessions * 100,
+  "Service volume", "Group administration sessions",        service_summary$total_group, total_sessions, service_summary$total_group / total_sessions * 100,
+  "Service volume", "Total sessions",                       total_sessions, NA, NA,
+  "Service volume", "Mean psilocybin dose (mg)",            24.5, NA, NA,
+  "Adverse events", "Adverse behavioral reactions",         service_summary$adverse_behavioral, total_encounters, service_summary$adverse_behavioral / total_encounters * 100,
+  "Adverse events", "Severe adverse behavioral reactions",  service_summary$severe_behavioral, total_encounters, service_summary$severe_behavioral / total_encounters * 100,
+  "Adverse events", "Adverse medical reactions",            service_summary$adverse_medical, total_encounters, service_summary$adverse_medical / total_encounters * 100,
+  "Adverse events", "Severe adverse medical reactions",     service_summary$severe_medical, total_encounters, service_summary$severe_medical / total_encounters * 100,
+  "Adverse events", "Post-session reactions",               service_summary$post_session, total_encounters, service_summary$post_session / total_encounters * 100,
+  "Adverse events", "Total adverse events",                 service_summary$total_adverse, total_encounters, service_summary$total_adverse / total_encounters * 100,
+  "Service denials","Inconsistent with business model",     94, total_denials, 94 / total_denials * 100,
+  "Service denials","Client ineligible",                    147, total_denials, 147 / total_denials * 100,
+  "Service denials","Client intoxicated",                   0, total_denials, 0,
+  "Service denials","Concerning behaviors",                 8, total_denials, 8 / total_denials * 100,
+  "Service denials","Other reasons",                        26, total_denials, 26 / total_denials * 100,
+  "Service denials","Total denials",                        total_denials, total_encounters, total_denials / total_encounters * 100,
+)
+
+cat("\n--- Table 2: Service and Safety ---\n")
+print(table2, n = 20)
+
+write_csv(table2, here::here("output", "tables", "table2_service_safety.csv"))
+cat("\nSaved to output/tables/table2_service_safety.csv\n")
+
 # --- Save ---
 save(ops_age, ops_sex, ops_income, ops_race_pi, ops_geo,
      ops_visit, ops_orientation, ops_gender, ops_language,
-     service_summary, ops_all,
+     service_summary, denial_summary, ops_all,
      file = here::here("output", "ops_processed.RData"))
 cat("\nSaved to output/ops_processed.RData\n")

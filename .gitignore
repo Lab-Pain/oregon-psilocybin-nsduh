@@ -10,3 +10,7 @@ output/
 .Rhistory
 .RData
 .Rproj.user/
+
+# System
+.DS_Store
+Rplots.pdf
