@@ -1,0 +1,12 @@
+# Data (not committed)
+data/nsduh/*.RData
+data/ops/*.csv
+*.RData
+
+# Output (reproducible from scripts)
+output/
+
+# R session
+.Rhistory
+.RData
+.Rproj.user/
