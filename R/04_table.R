@@ -6,30 +6,33 @@ load(here::here("output", "nsduh_processed.RData"))
 load(here::here("output", "ops_processed.RData"))
 
 # --- Format for publication ---
-fmt <- function(n, pct) sprintf("%s (%.1f%%)", format(n, big.mark = ","), pct)
+# NSDUH: weighted N (population estimate) + weighted %
+# OPS: raw encounter counts + %
+fmt_nsduh <- function(weighted_N, pct) {
+  sprintf("%s (%.1f%%)", format(round(weighted_N), big.mark = ","), pct)
+}
+fmt_ops <- function(n, pct) {
+  sprintf("%s (%.1f%%)", format(n, big.mark = ","), pct)
+}
 
 # Main comparison (age, sex, race — same categories both sides)
 main_comp <- comparison %>%
   filter(variable != "income") %>%
-  mutate(formatted = fmt(n, pct)) %>%
+  mutate(formatted = if_else(
+    source == "NSDUH",
+    fmt_nsduh(weighted_N, pct),
+    fmt_ops(n, pct)
+  )) %>%
   select(variable, category, source, formatted) %>%
   pivot_wider(names_from = source, values_from = formatted)
 
-# Income: show each source's own brackets
-nsduh_inc <- comparison %>%
-  filter(variable == "income", source == "NSDUH") %>%
-  mutate(formatted = fmt(n, pct))
-
-ops_inc <- comparison %>%
-  filter(variable == "income", source == "OPS") %>%
-  mutate(formatted = fmt(n, pct))
-
 # Full income breakdown
-inc_full <- income_full %>%
-  mutate(formatted = fmt(n, pct))
-
-nsduh_inc_detail <- inc_full %>% filter(source == "NSDUH")
-ops_inc_detail   <- inc_full %>% filter(source == "OPS")
+nsduh_inc_detail <- income_full %>%
+  filter(source == "NSDUH") %>%
+  mutate(formatted = fmt_nsduh(weighted_N, pct))
+ops_inc_detail <- income_full %>%
+  filter(source == "OPS") %>%
+  mutate(formatted = fmt_ops(n, pct))
 
 # --- Build final table rows ---
 rows <- list()
@@ -112,17 +115,17 @@ rows[[length(rows) + 1]] <- tibble(
   Variable = "Residence (OPS only)",
   Category = "Oregon",
   `NSDUH Past-Year Psilocybin Users` = "—",
-  `OPS Clients (2025)` = fmt(oregon_n, oregon_n / geo_denom * 100)
+  `OPS Clients (2025)` = fmt_ops(oregon_n, oregon_n / geo_denom * 100)
 )
 rows[[length(rows) + 1]] <- tibble(
   Variable = "", Category = "Other US state",
   `NSDUH Past-Year Psilocybin Users` = "—",
-  `OPS Clients (2025)` = fmt(other_us, other_us / geo_denom * 100)
+  `OPS Clients (2025)` = fmt_ops(other_us, other_us / geo_denom * 100)
 )
 rows[[length(rows) + 1]] <- tibble(
   Variable = "", Category = "International",
   `NSDUH Past-Year Psilocybin Users` = "—",
-  `OPS Clients (2025)` = fmt(outside, outside / geo_denom * 100)
+  `OPS Clients (2025)` = fmt_ops(outside, outside / geo_denom * 100)
 )
 
 # ===========================================================
@@ -135,7 +138,7 @@ add_mh_row <- function(varname, label, is_first = FALSE) {
   tibble(
     Variable = if (is_first) "Past-year clinical (NSDUH only)" else "",
     Category = label,
-    `NSDUH Past-Year Psilocybin Users` = fmt(r$n, r$weighted_pct),
+    `NSDUH Past-Year Psilocybin Users` = fmt_nsduh(r$weighted_N, r$weighted_pct),
     `OPS Clients (2025)` = "—"
   )
 }

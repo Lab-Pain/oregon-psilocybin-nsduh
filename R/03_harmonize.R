@@ -161,7 +161,7 @@ nsduh_inc_full <- nsduh_demo %>%
   filter(variable == "income") %>%
   mutate(variable = "income_full") %>%
   rename(pct = weighted_pct) %>%
-  select(source, variable, category, n, pct, se)
+  select(source, variable, category, n, weighted_N, se_N, pct, se)
 
 # Collapsed NSDUH income for 3-tier comparison
 nsduh_harmonized <- nsduh_demo %>%
@@ -183,10 +183,16 @@ nsduh_harmonized <- nsduh_demo %>%
   group_by(source, variable, category) %>%
   summarise(
     n = sum(n),
+    weighted_N = sum(weighted_N),
     weighted_pct = if (variable[1] == "income" & n() > 1) {
       sum(weighted_pct)
     } else {
       weighted_pct[1]
+    },
+    se_N = if (variable[1] == "income" & n() > 1) {
+      sqrt(sum(se_N^2))
+    } else {
+      se_N[1]
     },
     se = if (variable[1] == "income" & n() > 1) {
       sqrt(sum(se^2))
@@ -196,7 +202,7 @@ nsduh_harmonized <- nsduh_demo %>%
     .groups = "drop"
   ) %>%
   rename(pct = weighted_pct) %>%
-  select(source, variable, category, n, pct, se)
+  select(source, variable, category, n, weighted_N, se_N, pct, se)
 
 # ===========================================================
 # Combine into single comparison data frame
@@ -207,7 +213,7 @@ ops_combined <- bind_rows(
   ops_race_harmonized,
   ops_inc_harmonized
 ) %>%
-  mutate(se = NA_real_)
+  mutate(se = NA_real_, weighted_N = NA_real_, se_N = NA_real_)
 
 comparison <- bind_rows(nsduh_harmonized, ops_combined) %>%
   mutate(
@@ -225,7 +231,7 @@ comparison <- bind_rows(nsduh_harmonized, ops_combined) %>%
 # Full income breakdown (both sources)
 income_full <- bind_rows(
   nsduh_inc_full,
-  ops_inc_full %>% mutate(se = NA_real_)
+  ops_inc_full %>% mutate(se = NA_real_, weighted_N = NA_real_, se_N = NA_real_)
 )
 
 cat("\n=== HARMONIZED COMPARISON ===\n")

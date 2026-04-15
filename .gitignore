@@ -1,0 +1,23 @@
+# Data (not committed — download from SAMHSA / OHA)
+NSDUH/*.RData
+NSDUH/codebook.md
+OPS/*.csv
+OPS/*.pdf
+*.RData
+
+# Output (reproducible from scripts)
+output/
+
+# R session
+.Rhistory
+.RData
+.Rproj.user/
+
+# System
+.DS_Store
+Rplots.pdf
+
+# Editor / assistant config
+CLAUDE.md
+.claude/
+.here

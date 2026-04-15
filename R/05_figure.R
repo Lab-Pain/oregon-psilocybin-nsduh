@@ -19,7 +19,7 @@ visit_data <- ops_visit %>%
     # Clean labels
     label = case_when(
       reason == "GeneralHealth"                        ~ "General health/wellness",
-      reason == "ChangeOfPerspective"                  ~ "Change of perspective",
+      reason == "ChangeOfPerspective"                  ~ "Change of perspective/motivation",
       reason == "ExpandedConsciousness"                ~ "Expanded consciousness",
       reason == "Anxiety"                              ~ "Anxiety",
       reason == "Depression"                           ~ "Depression",
@@ -47,7 +47,7 @@ visit_data <- ops_visit %>%
     ),
     # Categorize
     category = case_when(
-      label %in% c("General health/wellness", "Change of perspective",
+      label %in% c("General health/wellness", "Change of perspective/motivation",
                     "Expanded consciousness", "Enhanced creativity",
                     "Spirituality")                            ~ "Wellness/Personal Growth",
       label %in% c("Anxiety", "Depression", "PTSD",

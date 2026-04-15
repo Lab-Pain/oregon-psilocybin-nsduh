@@ -2,7 +2,7 @@
 source(here::here("R", "00_packages.R"))
 
 # --- Read quarterly CSVs ---
-ops_dir <- here::here("..")
+ops_dir <- here::here("OPS")
 q_files <- paste0("OPS-Data-File-2025-Q", 1:4, ".csv")
 
 ops_raw <- map(q_files, function(f) {
@@ -121,6 +121,15 @@ ops_gender <- sum_cols(intersect(gi_cols, common_cols))
 
 # --- ADVERSE EVENTS (already in service_summary) ---
 
+# --- DISABILITY (Yes/No per domain) ---
+disability_domains <- c("Deaf", "Blind", "DifficultyWalking",
+                        "DifficultyConcentrating", "DifficultyDressingOrBathing",
+                        "DifficultyLearning", "DifficultyCommunicating",
+                        "DifficultyErrandsAlone", "DifficultyWithMoods")
+disability_cols <- paste0(rep(disability_domains, each = 4),
+                          c("Yes", "No", "DontKnow", "NoAnswer"))
+ops_disability <- sum_cols(intersect(disability_cols, common_cols))
+
 # --- LANGUAGE (select one) ---
 spoken_cols <- common_cols[grepl("^Spoken", common_cols)]
 ops_language <- sum_cols(spoken_cols)
@@ -151,6 +160,35 @@ ops_geo     <- add_pct(ops_geo,     "NoAnswer")
 ops_visit   <- add_pct(ops_visit,   "DontKnow|NoAnswer")
 ops_orientation <- add_pct(ops_orientation, "NoAnswer|DontKnow|DontUnderstand")
 ops_gender  <- add_pct(ops_gender,  "NoAnswer|DontKnow|DontUnderstand")
+
+# Disability: compute % Yes among Yes+No respondents per domain
+ops_disability_summary <- tibble(
+  domain = disability_domains,
+  yes = map_dbl(disability_domains, ~{
+    v <- ops_disability %>% filter(column == paste0(.x, "Yes")) %>% pull(n)
+    if (length(v) == 0) 0 else v
+  }),
+  no = map_dbl(disability_domains, ~{
+    v <- ops_disability %>% filter(column == paste0(.x, "No")) %>% pull(n)
+    if (length(v) == 0) 0 else v
+  })
+) %>%
+  mutate(
+    respondents = yes + no,
+    pct = if_else(respondents > 0, yes / respondents * 100, NA_real_)
+  )
+
+cat("\n--- OPS Disability ---\n")
+print(ops_disability_summary)
+
+# --- Average client uses (weighted across quarters) ---
+avg_uses_weighted <- ops_all %>%
+  summarise(
+    weighted_avg = sum(ClientsServed * AverageClientUses, na.rm = TRUE) /
+                   sum(ClientsServed, na.rm = TRUE)
+  ) %>%
+  pull(weighted_avg)
+cat("\nWeighted average client uses:", round(avg_uses_weighted, 2), "\n")
 
 cat("\n--- OPS Age ---\n")
 print(ops_age)
@@ -199,19 +237,40 @@ table2 <- tribble(
   "Service volume", "Group administration sessions",        service_summary$total_group, total_sessions, service_summary$total_group / total_sessions * 100,
   "Service volume", "Total sessions",                       total_sessions, NA, NA,
   "Service volume", "Mean psilocybin dose (mg)",            24.5, NA, NA,
+  "Service volume", "Mean encounters per client",            round(avg_uses_weighted, 2), NA, NA,
   "Adverse events", "Adverse behavioral reactions",         service_summary$adverse_behavioral, total_encounters, service_summary$adverse_behavioral / total_encounters * 100,
   "Adverse events", "Severe adverse behavioral reactions",  service_summary$severe_behavioral, total_encounters, service_summary$severe_behavioral / total_encounters * 100,
   "Adverse events", "Adverse medical reactions",            service_summary$adverse_medical, total_encounters, service_summary$adverse_medical / total_encounters * 100,
   "Adverse events", "Severe adverse medical reactions",     service_summary$severe_medical, total_encounters, service_summary$severe_medical / total_encounters * 100,
   "Adverse events", "Post-session reactions",               service_summary$post_session, total_encounters, service_summary$post_session / total_encounters * 100,
   "Adverse events", "Total adverse events",                 service_summary$total_adverse, total_encounters, service_summary$total_adverse / total_encounters * 100,
-  "Service denials","Inconsistent with business model",     94, total_denials, 94 / total_denials * 100,
-  "Service denials","Client ineligible",                    147, total_denials, 147 / total_denials * 100,
-  "Service denials","Client intoxicated",                   0, total_denials, 0,
-  "Service denials","Concerning behaviors",                 8, total_denials, 8 / total_denials * 100,
-  "Service denials","Other reasons",                        26, total_denials, 26 / total_denials * 100,
+  "Service denials","Inconsistent with business model",     denial_summary$n[denial_summary$label == "Inconsistent with business model"], total_denials, denial_summary$pct_of_denials[denial_summary$label == "Inconsistent with business model"],
+  "Service denials","Client ineligible",                    denial_summary$n[denial_summary$label == "Client ineligible"], total_denials, denial_summary$pct_of_denials[denial_summary$label == "Client ineligible"],
+  "Service denials","Client intoxicated",                   denial_summary$n[denial_summary$label == "Client intoxicated"], total_denials, denial_summary$pct_of_denials[denial_summary$label == "Client intoxicated"],
+  "Service denials","Concerning behaviors",                 denial_summary$n[denial_summary$label == "Concerning behaviors"], total_denials, denial_summary$pct_of_denials[denial_summary$label == "Concerning behaviors"],
+  "Service denials","Other reasons",                        denial_summary$n[denial_summary$label == "Other reasons"], total_denials, denial_summary$pct_of_denials[denial_summary$label == "Other reasons"],
   "Service denials","Total denials",                        total_denials, total_encounters, total_denials / total_encounters * 100,
-)
+) %>%
+  bind_rows(
+    ops_disability_summary %>%
+      mutate(
+        category = "Disability",
+        characteristic = case_when(
+          domain == "DifficultyWithMoods"          ~ "Difficulty with moods",
+          domain == "DifficultyConcentrating"      ~ "Difficulty concentrating",
+          domain == "DifficultyErrandsAlone"       ~ "Difficulty doing errands alone",
+          domain == "DifficultyWalking"            ~ "Difficulty walking",
+          domain == "DifficultyLearning"           ~ "Difficulty learning",
+          domain == "DifficultyCommunicating"      ~ "Difficulty communicating",
+          domain == "DifficultyDressingOrBathing"  ~ "Difficulty dressing or bathing",
+          domain == "Deaf"                         ~ "Deaf or hard of hearing",
+          domain == "Blind"                        ~ "Blind or difficulty seeing"
+        ),
+        n = yes,
+        denominator = respondents
+      ) %>%
+      select(category, characteristic, n, denominator, pct)
+  )
 
 cat("\n--- Table 2: Service and Safety ---\n")
 print(table2, n = 20)
@@ -222,6 +281,7 @@ cat("\nSaved to output/tables/table2_service_safety.csv\n")
 # --- Save ---
 save(ops_age, ops_sex, ops_income, ops_race_pi, ops_geo,
      ops_visit, ops_orientation, ops_gender, ops_language,
+     ops_disability, ops_disability_summary, avg_uses_weighted,
      service_summary, denial_summary, ops_all,
      file = here::here("output", "ops_processed.RData"))
 cat("\nSaved to output/ops_processed.RData\n")

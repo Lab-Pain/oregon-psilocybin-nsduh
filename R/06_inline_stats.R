@@ -6,15 +6,17 @@ load(here::here("output", "ops_processed.RData"))
 load(here::here("output", "harmonized.RData"))
 
 cat("============================================================\n")
-cat("  IN-TEXT STATISTICS FOR JAMA PSYCHIATRY RESEARCH LETTER\n")
+cat("  IN-TEXT STATISTICS FOR JAMA PSYCHIATRY BRIEF REPORT\n")
 cat("============================================================\n\n")
 
 # --- Sample sizes ---
 cat("--- SAMPLE SIZES ---\n")
-cat(sprintf("NSDUH total adults: %s\n",
+cat(sprintf("NSDUH total adults (unweighted): %s\n",
             format(nrow(nsduh_svy$variables), big.mark = ",")))
-cat(sprintf("NSDUH past-year psilocybin users: %s\n",
+cat(sprintf("NSDUH past-year psilocybin users (unweighted n): %s\n",
             format(nrow(psil_svy$variables), big.mark = ",")))
+cat(sprintf("NSDUH past-year psilocybin users (weighted N): %s\n",
+            format(round(total_weighted_N), big.mark = ",")))
 cat(sprintf("OPS client-quarter encounters: %s\n",
             format(service_summary$total_clients, big.mark = ",")))
 cat(sprintf("OPS total sessions: %s (individual: %s, group: %s)\n",
