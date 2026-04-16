@@ -6,13 +6,13 @@ load(here::here("output", "nsduh_processed.RData"))
 load(here::here("output", "ops_processed.RData"))
 
 # --- Format for publication ---
-# NSDUH: weighted N (population estimate) + weighted %
-# OPS: raw encounter counts + %
-fmt_nsduh <- function(weighted_N, pct) {
-  sprintf("%s (%.1f%%)", format(round(weighted_N), big.mark = ","), pct)
+# NSDUH: survey-weighted % (unweighted n)
+# OPS: % of demographic respondents (n)
+fmt_nsduh <- function(n, pct) {
+  sprintf("%.1f%% (%s)", pct, format(n, big.mark = ","))
 }
 fmt_ops <- function(n, pct) {
-  sprintf("%s (%.1f%%)", format(n, big.mark = ","), pct)
+  sprintf("%.1f%% (%s)", pct, format(n, big.mark = ","))
 }
 
 # Main comparison (age, sex, race — same categories both sides)
@@ -20,7 +20,7 @@ main_comp <- comparison %>%
   filter(variable != "income") %>%
   mutate(formatted = if_else(
     source == "NSDUH",
-    fmt_nsduh(weighted_N, pct),
+    fmt_nsduh(n, pct),
     fmt_ops(n, pct)
   )) %>%
   select(variable, category, source, formatted) %>%
@@ -29,7 +29,7 @@ main_comp <- comparison %>%
 # Full income breakdown
 nsduh_inc_detail <- income_full %>%
   filter(source == "NSDUH") %>%
-  mutate(formatted = fmt_nsduh(weighted_N, pct))
+  mutate(formatted = fmt_nsduh(n, pct))
 ops_inc_detail <- income_full %>%
   filter(source == "OPS") %>%
   mutate(formatted = fmt_ops(n, pct))
@@ -138,7 +138,7 @@ add_mh_row <- function(varname, label, is_first = FALSE) {
   tibble(
     Variable = if (is_first) "Past-year clinical (NSDUH only)" else "",
     Category = label,
-    `NSDUH Past-Year Psilocybin Users` = fmt_nsduh(r$weighted_N, r$weighted_pct),
+    `NSDUH Past-Year Psilocybin Users` = fmt_nsduh(r$n, r$weighted_pct),
     `OPS Clients (2025)` = "—"
   )
 }

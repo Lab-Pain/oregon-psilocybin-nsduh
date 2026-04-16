@@ -21,6 +21,7 @@ Scripts in `R/` are numbered and should be run sequentially:
 | `04_table.R` | Generate demographic comparison table (Table 1) |
 | `05_figure.R` | Generate visit reason bar chart (Figure 1) |
 | `06_inline_stats.R` | Compute all supplementary statistics (geography, safety, LGBQ+, clinical profile) |
+| `07_statistical_tests.R` | Chi-square goodness-of-fit tests comparing OPS demographic distributions to NSDUH survey-weighted proportions (sex, age, race/ethnicity) |
 
 ## Key Methodological Notes
 
