@@ -1,4 +1,4 @@
-# Oregon Psilocybin Services vs National Psilocybin Use (NSDUH 2024)
+# Oregon Psilocybin Services in 2025 vs National Psilocybin Use (NSDUH 2024)
 
 Descriptive comparison of demographic characteristics between adults reporting past-year psilocybin use in a nationally representative survey and clients accessing Oregon's legal psilocybin program.
 
@@ -27,8 +27,6 @@ Scripts in `R/` are numbered and should be run sequentially:
 
 - NSDUH estimates use survey weights (`svydesign` with VEREP, VESTR_C, ANALWT2_C)
 - OPS data are aggregate counts; individual records are not available and clients are not deduplicated across quarters
-- Approximately 35% of OPS encounters lack demographic data due to client opt-out or service center reporting noncompliance
-- OPS percentages use respondent denominators, not total encounters
 - Income brackets differ between sources and are presented separately
 - OPS race/ethnicity uses Oregon REALD primary racial identity categories, collapsed to five groups for comparison
 
