@@ -1,12 +1,10 @@
 # 07_statistical_tests.R — Chi-square goodness-of-fit tests
 # Compares OPS observed counts against NSDUH survey-weighted proportions
-data_dir <- "C:/Users/Gabriel/OneDrive - Yale University/Gabriel - JP/Papers/Psilocybin - Oregon-NSDUH/Data"
+source(here::here("R", "00_packages.R"))
 
-library(tidyverse)
-
-load(file.path(data_dir, "output", "harmonized.RData"))
-load(file.path(data_dir, "output", "nsduh_processed.RData"))
-load(file.path(data_dir, "output", "ops_processed.RData"))
+load(here::here("output", "harmonized.RData"))
+load(here::here("output", "nsduh_processed.RData"))
+load(here::here("output", "ops_processed.RData"))
 
 cat("============================================================\n")
 cat("  CHI-SQUARE GOODNESS-OF-FIT: OPS vs NSDUH PROPORTIONS\n")
